@@ -5,8 +5,11 @@ require_once "packet.php";
 class dhcpServer {
     private $socket = null;
     private $responseSocket = null;
+    private $storage = null;
     
     function __construct() {
+        $this->storage = new dhcpStorage();
+        
         $this->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         socket_bind($this->socket, "0.0.0.0", 67);
         socket_set_option($this->socket, SOL_SOCKET, SO_BROADCAST, 1);
@@ -25,13 +28,22 @@ class dhcpServer {
     function processPacket($packetData) {
         $packet = new dhcpPacket();
         $packet->parse($packetData);
-        $processor = new dhcpRequestProcessor($packet);
+        $processor = new dhcpRequestProcessor($this->storage, $packet);
         
-        $response = $processor->getResponse();
+        $responsePacket = $processor->getResponse();
+        $responseData = $responsePacket->build();
         print("sending response" . "\n");
-        
-        $error = socket_sendto($this->socket, $response, strlen($response), 0, "255.255.255.255", 68);
-
+        $ciaddr = $packet->getClientAddress();
+        if ($ciaddr == '0.0.0.0') {
+            print("Switching to broadcast address...\n");
+            $ciaddr = '255.255.255.255';
+        }
+        print("attempting to send packet to " . $ciaddr . "\n");
+        $error = socket_sendto($this->socket, $responseData, strlen($responseData), 0, $ciaddr, 68);
+        if ($error === FALSE) {
+            print("send failed for specific address, broadcast.\n");
+            $error = socket_sendto($this->socket, $responseData, strlen($responseData), 0, "255.255.255.255", 68);
+        }
         print('socket send error: ' . $error . "\n");
     }
 }

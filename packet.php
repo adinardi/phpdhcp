@@ -59,6 +59,21 @@ class dhcpPacket {
         return $this->packetData['message_type'];
     }
     
+    function getClientAddress() {
+        $ciaddr = $this->getData('ciaddr');
+        $ciaddr = self::hex2ip($ciaddr);
+        return $ciaddr[0] . '.' .
+            $ciaddr[1] . '.' .
+            $ciaddr[2] . '.' .
+            $ciaddr[3];
+    }
+    
+    function getMACAddress() {
+        $chaddr = $this->getData('chaddr');
+        $mac = substr($chaddr, 0, 12);
+        return $mac;
+    }
+    
     function parse($binaryData) {
         $this->packetData = unpack("H2op/H2type/H2hlen/H2hops/H8xid/H4secs/H4flags/H8ciaddr/H8yiaddr/H8siaddr/H8giaddr/H32chaddr/H128sname/H256file/H8magic/H*options", $binaryData);
         
@@ -83,12 +98,7 @@ class dhcpPacket {
                         $translatedData = self::hex2string($curoptdata);
                         break;
                     case 'ip':
-                        $translatedData = array(
-                            self::hex2int($curoptdata[0] . $curoptdata[1]),
-                            self::hex2int($curoptdata[2] . $curoptdata[3]),
-                            self::hex2int($curoptdata[4] . $curoptdata[5]),
-                            self::hex2int($curoptdata[6] . $curoptdata[7])
-                            );
+                        $translatedData = self::hex2ip($curoptdata);
                         break;
                     case 'messageType':
                         $translatedData = self::$messageTypes[self::hex2int($curoptdata)];
@@ -170,7 +180,12 @@ class dhcpPacket {
     }
     
     public static function hex2ip($hex) {
-        
+        return array(
+            self::hex2int($hex[0] . $hex[1]),
+            self::hex2int($hex[2] . $hex[3]),
+            self::hex2int($hex[4] . $hex[5]),
+            self::hex2int($hex[6] . $hex[7])
+        );
     }
     
     public static function string2hex($str) {
