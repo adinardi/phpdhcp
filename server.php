@@ -10,10 +10,7 @@ class dhcpServer {
         $this->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         socket_bind($this->socket, "0.0.0.0", 67);
         socket_set_option($this->socket, SOL_SOCKET, SO_BROADCAST, 1);
-        
-        $this->responseSocket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        socket_bind($this->responseSocket, "0.0.0.0", 68);
-        socket_set_option($this->responseSocket, SOL_SOCKET, SO_BROADCAST, 1);
+        socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 1);
     }
     
     function listen() {
@@ -31,6 +28,10 @@ class dhcpServer {
         $processor = new dhcpRequestProcessor($packet);
         
         $response = $processor->getResponse();
-        socket_sendto($this->responseSocket, $response, strlen($response), 0, "255.255.255.255", 68);
+        print("sending response" . "\n");
+        
+        $error = socket_sendto($this->socket, $response, strlen($response), 0, "255.255.255.255", 68);
+
+        print('socket send error: ' . $error . "\n");
     }
 }

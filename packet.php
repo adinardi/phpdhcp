@@ -131,12 +131,12 @@ class dhcpPacket {
                         break;
                 }
                 
-                // print($code . ' ' . $translatedData . ' ' . strlen($translatedData) . "\n");
+                // print($code . ' ' . $translatedData . ' ' . self::int2hex(strlen($translatedData)/2) . "\n");
                 $optionsData .= $code . self::int2hex(strlen($translatedData)/2) . $translatedData;
             }
         }
         $optionsData .= self::int2hex(255);
-        $optionsData .= self::int2hex(1);
+        // $optionsData .= self::int2hex(1);
         $optionsData .= '00';
         // print_r($p);
         // print($optionsData);
@@ -201,7 +201,7 @@ class dhcpPacket {
         } else if (strlen($hex) == 3) {
             $hex = '0' . $hex;
         } else if (strlen($hex) == 5) {
-            $hex = '0' . $hex;
+            $hex = '000' . $hex;
         } else if (strlen($hex) == 7) {
             $hex = '0' . $hex;
         }
