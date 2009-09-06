@@ -8,7 +8,16 @@ socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1);
 while(1) {
     $data = socket_read($socket, 4608);
     // print_r(unpack("H*data", $data));
+
     $packet = new dhcpPacket();
     $packet->parse($data);
     print_r($packet->packetData);
+    
+    print_r(unpack("H*", $data));
+    $newData = $packet->build();
+    print_r(unpack("H*", $newData));
+    
+    $newpacket = new dhcpPacket();
+    $newpacket->parse($newData);
+    print_r($newpacket->packetData);
 }

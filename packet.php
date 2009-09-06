@@ -11,14 +11,24 @@ class dhcpPacket {
         28 => array('name' => 'broadcast_address', 'type' => 'ip'),
         50 => array('name' => 'requested_ip_address', 'type' => 'ip'),
         51 => array('name' => 'lease_time', 'type' => 'int'),
-        53 => array('name' => 'message_type', 'type' => 'int'),
+        53 => array('name' => 'message_type', 'type' => 'messageType'),
         54 => array('name' => 'server_id', 'type' => 'ip'),
         55 => array('name' => 'parameter_request', 'type' => 'binary'),
         57 => array('name' => 'max_message_size', 'type' => 'int'),
         58 => array('name' => 'renewal_time', 'type' => 'int'),
         59 => array('name' => 'rebinding_time', 'type' => 'int'),
         61 => array('name' => 'client_id', 'type' => 'mac')
-        );
+    );
+    public static $messageTypes = array(
+        1 => 'discover',
+        2 => 'offer',
+        3 => 'request',
+        4 => 'decline',
+        5 => 'ack',
+        6 => 'nak',
+        7 => 'release',
+        8 => 'inform'
+    );
     public $packetData = array();
     
     function parse($binaryData) {
@@ -34,7 +44,6 @@ class dhcpPacket {
             $curoptdata = substr($optionData, $pos, $len*2);
             $pos += $len*2;
 
-            // print_r(array('code'=>$code, 'len'=>$len, 'data'=>$curoptdata));
             $optinfo = dhcpPacket::$options[$code];
             if ($optinfo) {
                 $translatedData = null;
@@ -53,6 +62,9 @@ class dhcpPacket {
                             $this->hex2int($curoptdata[6] . $curoptdata[7])
                             );
                         break;
+                    case 'messageType':
+                        $translatedData = dhcpPacket::$messageTypes[$this->hex2int($curoptdata)];
+                        break;
                     default:
                         $translatedData = $curoptdata;
                         break;
@@ -64,10 +76,68 @@ class dhcpPacket {
         }
     }
     
+    function build() {
+        $p = $this->packetData;
+        
+        $optionsData = '';
+        foreach(dhcpPacket::$options as $optcode => $optinfo) {
+            if (isset($this->packetData[$optinfo['name']])) {
+                $itemdata = $this->packetData[$optinfo['name']];
+                $code = $this->int2hex($optcode);
+                
+                switch($optinfo['type']) {
+                    case 'int':
+                        $translatedData = $this->int2hex($itemdata);
+                        break;
+                    case 'string':
+                        $translatedData = $this->string2hex($itemdata);
+                        break;
+                    case 'ip':
+                        $translatedData =
+                            $this->int2hex($itemdata[0]) .
+                            $this->int2hex($itemdata[1]) .
+                            $this->int2hex($itemdata[2]) .
+                            $this->int2hex($itemdata[3]);
+                        break;
+                    case 'messageType':
+                        $translatedData = $this->int2hex(array_search($itemdata, dhcpPacket::$messageTypes));
+                        break;
+                    default:
+                        $translatedData = $itemdata;
+                        break;
+                }
+                
+                // print_r($code . $this->int2hex(strlen($translatedData)/2) . $translatedData);
+                $optionsData .= $code . $this->int2hex(strlen($translatedData)/2) . $translatedData;
+            }
+        }
+        $optionsData .= $this->int2hex(255);
+        
+        $data = pack("H2H2H2H2H8H4H4H8H8H8H8H32H128H256H8H*",
+            $p['op'],
+            $p['type'],
+            $p['hlen'],
+            $p['hops'],
+            $p['xid'],
+            $p['secs'],
+            $p['flags'],
+            $p['ciaddr'],
+            $p['yiaddr'],
+            $p['siaddr'],
+            $p['giaddr'],
+            $p['chaddr'],
+            $p['sname'],
+            $p['file'],
+            $p['magic'],
+            $optionsData
+        );
+        
+        return $data;
+    }
+    
     function string2hex($str) {
         $hex = '';
-        for ($iter = 0; $iter < strlen($str); $iter++)
-        {
+        for ($iter = 0; $iter < strlen($str); $iter++) {
             $hex .= dechex(ord($str[$iter]));
         }
         return $hex;
@@ -75,9 +145,7 @@ class dhcpPacket {
     
     function hex2string($hex) {
         $str = '';
-        for ($iter = 0; $iter < strlen($hex) - 1; $iter += 2)
-        {
-            print('hex: ' . $hex[$iter] . $hex[$iter + 1] . ' dec: ' . hexdec($hex[$iter] . $hex[$iter + 1]) . ' char: ' . chr(hexdec($hex[$iter] . $hex[$iter + 1])));
+        for ($iter = 0; $iter < strlen($hex) - 1; $iter += 2) {
             $str .= chr(hexdec($hex[$iter] . $hex[$iter + 1]));
         }
         return $str;
@@ -85,5 +153,15 @@ class dhcpPacket {
     
     function hex2int($hex) {
         return base_convert($hex, 16, 10);
+    }
+    
+    function int2hex($int) {
+        $hex = base_convert($int, 10, 16);
+        if (strlen($hex) == 1) {
+            $hex = '0' . $hex;
+        } else if (strlen($hex) == 3) {
+            $hex = '0' . $hex;
+        }
+        return $hex;
     }
 }
