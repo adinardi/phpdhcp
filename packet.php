@@ -1,4 +1,19 @@
 <?php
+/*
+  Copyright 2009 Angelo R. DiNardi (angelo@dinardi.name)
+ 
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+ 
+    http://www.apache.org/licenses/LICENSE-2.0
+ 
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
 
 class dhcpPacket {
     public static $options = array(
@@ -17,7 +32,9 @@ class dhcpPacket {
         57 => array('name' => 'max_message_size', 'type' => 'int'),
         58 => array('name' => 'renewal_time', 'type' => 'int'),
         59 => array('name' => 'rebinding_time', 'type' => 'int'),
-        61 => array('name' => 'client_id', 'type' => 'mac')
+        61 => array('name' => 'client_id', 'type' => 'mac'),
+        91 => array('name' => 'client-last-transaction-time', 'type' => 'int'),
+        92 => array('name' => 'associated-ip', 'type' => 'string')
     );
     public static $messageTypes = array(
         1 => 'discover',
@@ -27,7 +44,11 @@ class dhcpPacket {
         5 => 'ack',
         6 => 'nak',
         7 => 'release',
-        8 => 'inform'
+        8 => 'inform',
+        10 => 'DHCPLEASEQUERY',
+        11 => 'DHCPLEASEUNASSIGNED',
+        12 => 'DHCPLEASEUNKNOWN',
+        13 => 'DHCPLEASEACTIVE'
     );
     public $packetData = array(
         'op' => '02',
