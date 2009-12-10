@@ -23,12 +23,12 @@ class dhcpServer {
     private $packetProcessor = null;
     private $socket = null;
     private $storage = null;
-	public $verbose;
+	public $verbosity;			// 0-2 - level of verbosity (0 to sqelch, 1 for a little, 2 for a lot (packet dumps))
     
-    function __construct(dhcpPacketProcessor $packetProcessor = NULL, $verbose = true)
+    function __construct(dhcpPacketProcessor $packetProcessor = NULL, $verbosity = 1)
 	{
 		$this->packetProcessor = $packetProcessor ? $packetProcessor : new defaultPacketProcessor;
-		$this->verbose = $verbose;
+		$this->verbosity = $verbosity;
         $this->storage = new dhcpStorage();
         
         $this->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
@@ -44,10 +44,10 @@ class dhcpServer {
     
     function listen() {
         while(1) {
-            $this->verbose && print('Listening -----------------------------------------------------------' . "\n");
+            $this->verbosity && print('Listening -----------------------------------------------------------' . "\n");
             $data = socket_read($this->socket, 4608);
             $this->processPacket($data);
-            $this->verbose && print("---------------------------------------------------------------------\n\n");
+            $this->verbosity && print("\n\n");
         }
     }
     
@@ -59,23 +59,24 @@ class dhcpServer {
 		if ($responsePacket = $processor->getResponse())
 		{
 	        $responseData = $responsePacket->build();
-	        $this->verbose && print("Sending response" . "\n");
+	        $this->verbosity && print("Sending response" . "\n");
 	        $ciaddr = $packet->getClientAddress();
 	        if ($ciaddr == '0.0.0.0') {
-	            $this->verbose && print("Switching to broadcast address...\n");
+	            $this->verbosity && print("Switching to broadcast address...\n");
 	            $ciaddr = '255.255.255.255';
 	        }
-	        $this->verbose && print("Attempting to send packet to " . $ciaddr . "\n");
+	        $this->verbosity && print("Attempting to send response packet to " . $ciaddr . "\n");
 	        $numBytesSent = socket_sendto($this->socket, $responseData, strlen($responseData), 0, $ciaddr, 68);
 	        if ($numBytesSent === FALSE) {
-	            $this->verbose && print("send failed for specific address, broadcast.\n");
+	            $this->verbosity && print("send failed for specific address, broadcast.\n");
 	            $numBytesSent = socket_sendto($this->socket, $responseData, strlen($responseData), 0, "255.255.255.255", 68);
-		        $numBytesSent === FALSE && $this->verbose && printf('socket send error: %s\n',socket_strerror(socket_last_error($this->socket)));
+		        $numBytesSent === FALSE && $this->verbosity && printf('socket send error: %s\n',socket_strerror(socket_last_error($this->socket)));
 	        }
+	        $numBytesSent && $this->verbosity && print("Response packet sent.\n");
 		}
 		else
 		{
-	        $this->verbose && print("Packet ignored\n");
+	        $this->verbosity && print("Packet ignored\n");
 		}
     }
 }

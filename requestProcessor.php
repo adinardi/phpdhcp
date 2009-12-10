@@ -95,8 +95,8 @@ class dhcpRequestProcessor {
 		$this->packet = $packet;
 		$response = new dhcpPacket;
 		
-		$server->verbose && print('processing packet ' . $packet->getMessageType() . "\n");
-		$server->verbose && print_r($packet);
+		$server->verbosity && print('Processing packet type: ' . $packet->getMessageType() . "\n");
+		$server->verbosity > 1 && print_r($packet);
 		
 		switch($packet->getMessageType()) {
 			case 'discover':
