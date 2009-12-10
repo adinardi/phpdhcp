@@ -16,6 +16,24 @@
 */
 
 class dhcpPacket {
+	const BOOTREPLY = '02';
+	const BOOTREQUEST = '01';
+	
+  // (012) DHO_HOST_NAME
+  // (014) DHO_MERIT_DUMP
+  // (015) DHO_DOMAIN_NAME
+  // (017) DHO_ROOT_PATH
+  // (018) DHO_EXTENSIONS_PATH
+  // (047) DHO_NETBIOS_SCOPE
+  // (056) DHO_DHCP_MESSAGE
+  // (060) DHO_VENDOR_CLASS_IDENTIFIER
+  // (062) DHO_NWIP_DOMAIN_NAME
+  // (064) DHO_NIS_DOMAIN
+  // (065) DHO_NIS_SERVER
+  // (067) DHO_BOOTFILE
+  // (086) DHO_NDS_TREE_NAME
+  // (098) DHO_USER_AUTHENTICATION_PROTOCOL
+  
     public static $options = array(
         1 => array('name' => 'subnet_mask', 'type' => 'ip'),
         2 => array('name' => 'time_offset', 'type' => 'int'),
@@ -33,6 +51,8 @@ class dhcpPacket {
         58 => array('name' => 'renewal_time', 'type' => 'int'),
         59 => array('name' => 'rebinding_time', 'type' => 'int'),
         61 => array('name' => 'client_id', 'type' => 'mac'),
+		60 => array('name' => 'vendor_class_identifier', 'type' => 'string'),
+		66 => array('name' => 'tftp_server', 'type' => 'string'),
         91 => array('name' => 'client-last-transaction-time', 'type' => 'int'),
         92 => array('name' => 'associated-ip', 'type' => 'string')
     );
@@ -52,8 +72,8 @@ class dhcpPacket {
     );
     public $packetData = array(
         'op' => '02',
-        'hlen' => '06',
         'htype' => '01',
+        'hlen' => '06',
         'hops' => '00',
         'xid' => '00000000',
         'secs' => '0000',
@@ -96,7 +116,7 @@ class dhcpPacket {
     }
     
     function parse($binaryData) {
-        $this->packetData = unpack("H2op/H2type/H2hlen/H2hops/H8xid/H4secs/H4flags/H8ciaddr/H8yiaddr/H8siaddr/H8giaddr/H32chaddr/H128sname/H256file/H8magic/H*options", $binaryData);
+        $this->packetData = unpack("H2op/H2htype/H2hlen/H2hops/H8xid/H4secs/H4flags/H8ciaddr/H8yiaddr/H8siaddr/H8giaddr/H32chaddr/H128sname/H256file/H8magic/H*options", $binaryData);
         
         $optionData = $this->packetData['options'];
         $pos = 0;
@@ -108,7 +128,7 @@ class dhcpPacket {
             $curoptdata = substr($optionData, $pos, $len*2);
             $pos += $len*2;
 
-            $optinfo = self::$options[$code];
+            $optinfo = @self::$options[$code];
             if ($optinfo) {
                 $translatedData = null;
                 switch($optinfo['type']) {
